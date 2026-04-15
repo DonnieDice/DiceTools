@@ -1,11 +1,16 @@
-## Interface: 110000
-## Version: 1.0.1
+## Interface: 11508,40402,50503,110207,120000,120001
+## Version: 2.0.0
 ## Title: DiceTools
-## Notes: |cff05dffaBy Uivi US-BleedingHollow|r
+## Notes: Developer utilities and debugging toolkit |n|r |cff05dffa/dt|r to get started
 ## Author: DonnieDice
 ## Email: donniedice@protonmail.com
-## OptionalDeps: 
-## IconTexture: Interface\AddOns\DiceTools\images\icon
 ## SavedVariables: DiceTools
+
+## X-Category: Development Tools, Miscellaneous
+## X-Website: https://github.com/donniedice/DiceTools
+## X-Curse-Project-ID: 937450
+## X-WoWI-ID: 26259
+## X-Wago-ID: n6VPaMNb
+## IconTexture: Interface\AddOns\DiceTools\images\icon.png
 
 data\DiceTools.lua

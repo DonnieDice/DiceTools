@@ -1,18 +1,24 @@
 --=====================================================================================
--- DiceTools Addon - Enhanced for BLU Development
+-- DiceTools Addon - Developer Utilities & Debugging Toolkit
 --=====================================================================================
 
--- Basic initialization
 local DiceTools = {}
-local frame = CreateFrame("Frame")
+_G.DiceTools = DiceTools
+
+-- Create a frame for events
+local frame = CreateFrame("Frame", "DiceToolsFrame")
 
 -- Event registration
 frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+frame:RegisterEvent("ADDON_LOADED")
 
--- Event handler function
+-- Event handler
 local function OnEvent(self, event, ...)
-    if event == "PLAYER_ENTERING_WORLD" then
-        print("DiceTools addon loaded.")
+    if event == "ADDON_LOADED" then
+        local addonName = ...
+        if addonName == "DiceTools" then
+            print("|cff05dffaDiceTools|r v2.0.0 loaded. Type |cff05dffa/dt|r for commands.")
+        end
     end
 end
 
@@ -22,140 +28,124 @@ frame:SetScript("OnEvent", OnEvent)
 -- Slash Command Handling
 --=====================================================================================
 
--- Basic slash commands
 SLASH_DT1 = "/dt"
 SlashCmdList["DT"] = function()
-    print("DiceTools Commands:")
-    print("/dt - List this menu")
-    print("/info - Output game and UI info")
-    print("/rl - Reload UI")
-    print("/clear - Clear chat log")
-    print("/renown - Output Renown info")
-    print("/friendship - Output Friendship info")
-    print("/playerlevel - Output Player level and experience")
-    print("/charlevel - Output Character level and experience")
-    print("/petinfo - Output Pet Journal details")
-    print("/tradepost - Output TradePost activities")
-    -- BLU-related commands
-    print("/questinfo [quest name/ID] - Get quest details")
-    print("/questavailable - List available quests")
-    print("/zoneinfo [zone name] - Get zone details")
-    print("/zonelist - List all zones and level ranges")
-    print("/xpdetails - Show XP and leveling info")
-    print("/xpsources - List XP sources in current zone")
-    print("/api [function name] - Explore WoW API")
+    print("|cff05dffaDiceTools|r Commands:")
+    print("|cff05dffa/dt|r          - List this menu")
+    print("|cff05dffa/info|r         - Show game version")
+    print("|cff05dffa/rl|r           - Reload UI")
+    print("|cff05dffa/clear|r        - Clear all chat windows")
+    print("|cff05dffa/petinfo|r      - Dump Pet Journal details")
+    print("|cff05dffa/renown|r       - Show Renown faction info")
+    print("|cff05dffa/friendship|r   - Show Friendship reputation info")
+    print("|cff05dffa/playerlevel|r  - Show player level and XP")
+    print("|cff05dffa/charlevel|r    - Show character effective level and XP")
+    print("|cff05dffa/tradepost|r    - List TradePost activities")
+    print("|cff05dffa/questinfo|r <name/ID> - Look up quest details")
+    print("|cff05dffa/questavailable|r    - List quests in current zone")
+    print("|cff05dffa/zoneinfo|r <name>   - Get zone details")
+    print("|cff05dffa/zonelist|r          - List all continents and zones")
+    print("|cff05dffa/xpdetails|r         - Show XP and leveling info")
+    print("|cff05dffa/xpsources|r         - List XP sources (placeholder)")
+    print("|cff05dffa/api|r <function>    - Call a WoW API function by name")
 end
 
--- Info command to get game version
 SLASH_INFO1 = "/info"
 SlashCmdList["INFO"] = function()
-    print("Game Version: " .. GetBuildInfo())
+    local version, build, date, toc = GetBuildInfo()
+    print("|cff05dffaDiceTools|r Game Info:")
+    print("  Version: " .. tostring(version))
+    print("  Build: " .. tostring(build))
+    print("  Date: " .. tostring(date))
+    print("  TOC: " .. tostring(toc))
 end
 
--- Reload UI command
 SLASH_RL1 = "/rl"
 SlashCmdList["RL"] = ReloadUI
 
--- Clear chat log command
 SLASH_CLEAR1 = "/clear"
 function SlashCmdList.CLEAR()
     for i = 1, NUM_CHAT_WINDOWS do
         _G["ChatFrame" .. i]:Clear()
     end
-    print("Chat log cleared.")
+    print("|cff05dffaDiceTools|r Chat log cleared.")
 end
 
 --=====================================================================================
--- Pet Journal Debugging Command
+-- Pet Journal
 --=====================================================================================
 
 SLASH_PETINFO1 = "/petinfo"
 SlashCmdList["PETINFO"] = function()
     local numPets = C_PetJournal.GetNumPets()
     if not numPets or numPets == 0 then
-        print("No pets found in the Pet Journal.")
+        print("|cff05dffaDiceTools|r No pets found in the Pet Journal.")
         return
     end
 
+    print("|cff05dffaDiceTools|r Pet Journal (" .. numPets .. " pets):")
     for i = 1, numPets do
         local petID, speciesID, isOwned, customName, level, xp, maxXp, displayID, isFavorite, name, icon, petType, creatureID, canBattle, tradable, unique = C_PetJournal.GetPetInfoByIndex(i, false)
 
-        print("Pet #" .. i)
-        print("  petID: " .. tostring(petID))
-        print("  speciesID: " .. tostring(speciesID))
-        print("  isOwned: " .. tostring(isOwned))
-        print("  customName: " .. tostring(customName))
-        print("  level: " .. tostring(level))
-        print("  xp: " .. tostring(xp))
-        print("  maxXp: " .. tostring(maxXp))
-        print("  displayID: " .. tostring(displayID))
-        print("  isFavorite: " .. tostring(isFavorite))
-        print("  name: " .. tostring(name))
-        print("  icon: " .. tostring(icon))
-        print("  petType: " .. tostring(petType))
-        print("  creatureID: " .. tostring(creatureID))
-        print("  canBattle: " .. tostring(canBattle))
-        print("  tradable: " .. tostring(tradable))
-        print("  unique: " .. tostring(unique))
+        print("  Pet #" .. i .. ": " .. tostring(name))
+        print("    Level: " .. tostring(level) .. " | XP: " .. tostring(xp) .. "/" .. tostring(maxXp))
+        print("    Type: " .. tostring(petType) .. " | Creature ID: " .. tostring(creatureID))
+        print("    Battle: " .. tostring(canBattle) .. " | Favorite: " .. tostring(isFavorite))
 
-        -- Fetch additional stats
         if petID then
-            local health, maxHealth, power, speed, rarity = C_PetJournal.GetPetStats(petID)
-            print("  Stats for petID: " .. tostring(petID))
-            print("    Health: " .. tostring(health))
-            print("    Max Health: " .. tostring(maxHealth))
-            print("    Power: " .. tostring(power))
-            print("    Speed: " .. tostring(speed))
-            print("    Rarity: " .. tostring(rarity))
-        else
-            print("  Invalid petID: " .. tostring(petID))
-        end
-    end
-end
-
---=====================================================================================
--- Renown and Friendship Information
---=====================================================================================
-
-SLASH_RENOWN1 = "/renown"
-SlashCmdList["RENOWN"] = function()
-    local renownFactions = C_Reputation.GetRenownFactions()
-
-    if not renownFactions or #renownFactions == 0 then
-        print("No Renown factions found.")
-        return
-    end
-
-    for _, factionID in ipairs(renownFactions) do
-        local renownInfo = C_Reputation.GetFactionParagonInfo(factionID)
-        if renownInfo then
-            print("Faction ID:", factionID)
-            print("Renown Level:", renownInfo.renownLevel)
-            print("Max Renown Level:", renownInfo.maxRenownLevel)
-        else
-            print("No valid Renown info for faction ID:", factionID)
-        end
-    end
-end
-
-SLASH_FRIENDSHIP1 = "/friendship"
-SlashCmdList["FRIENDSHIP"] = function()
-    local numFactions = GetNumFactions()
-    for i = 1, numFactions do
-        local name, _, standingID, _, _, _, _, _, _, _, _, _, isFriend = GetFactionInfo(i)
-        if isFriend then
-            local friendshipInfo = C_GossipInfo.GetFriendshipReputation(i)
-            if friendshipInfo then
-                print("Friendship with:", name)
-                print("Standing:", friendshipInfo.reaction)
-                print("Max Standing:", friendshipInfo.maxRep)
+            local success, health, maxHealth, power, speed, rarity = pcall(function()
+                return C_PetJournal.GetPetStats(petID)
+            end)
+            if success and health then
+                print("    Stats - HP: " .. health .. "/" .. maxHealth .. " | Power: " .. power .. " | Speed: " .. speed .. " | Rarity: " .. rarity)
             end
         end
     end
 end
 
 --=====================================================================================
--- Player Level and Character Level Information
+-- Renown and Friendship
+--=====================================================================================
+
+SLASH_RENOWN1 = "/renown"
+SlashCmdList["RENOWN"] = function()
+    if not C_Reputation then
+        print("|cff05dffaDiceTools|r C_Reputation API not available on this client.")
+        return
+    end
+
+    local renownFactions = C_Reputation.GetRenownFactions()
+    if not renownFactions or #renownFactions == 0 then
+        print("|cff05dffaDiceTools|r No Renown factions found.")
+        return
+    end
+
+    print("|cff05dffaDiceTools|r Renown Factions:")
+    for _, factionID in ipairs(renownFactions) do
+        local factionName = GetFactionInfoByID(factionID) or "Unknown"
+        local currentLevel = C_Reputation.GetRenownLevel(factionID) or 0
+        local maxLevel = C_Reputation.GetRenownMaxLevel(factionID) or 0
+        print("  " .. tostring(factionName) .. " - Level: " .. currentLevel .. "/" .. maxLevel)
+    end
+end
+
+SLASH_FRIENDSHIP1 = "/friendship"
+SlashCmdList["FRIENDSHIP"] = function()
+    local friendReps = C_GossipInfo.GetFriendshipReputation()
+    if not friendReps or #friendReps == 0 then
+        print("|cff05dffaDiceTools|r No friendship reputations found.")
+        return
+    end
+
+    print("|cff05dffaDiceTools|r Friendship Reputations:")
+    for _, repInfo in ipairs(friendReps) do
+        local factionName = GetFactionInfoByID(repInfo.factionID) or "Unknown"
+        print("  " .. factionName .. " - Standing: " .. repInfo.standing .. " / " .. repInfo.reactionThreshold)
+    end
+end
+
+--=====================================================================================
+-- Player Level and XP
 --=====================================================================================
 
 SLASH_PLAYERLEVEL1 = "/playerlevel"
@@ -164,10 +154,10 @@ SlashCmdList["PLAYERLEVEL"] = function()
     local playerXP = UnitXP("player")
     local maxXP = UnitXPMax("player")
 
-    print("Player Level:", playerLevel)
-    print("Player XP:", playerXP)
-    print("Max XP:", maxXP)
-    print("XP to next level:", maxXP - playerXP)
+    print("|cff05dffaDiceTools|r Player Info:")
+    print("  Level: " .. playerLevel)
+    print("  XP: " .. playerXP .. " / " .. maxXP)
+    print("  XP to Next: " .. (maxXP - playerXP))
 end
 
 SLASH_CHARLEVEL1 = "/charlevel"
@@ -176,118 +166,122 @@ SlashCmdList["CHARLEVEL"] = function()
     local charXP = UnitXP("player")
     local maxXP = UnitXPMax("player")
 
-    print("Character Level:", charLevel)
-    print("Character XP:", charXP)
-    print("Max XP:", maxXP)
-    print("XP to next level:", maxXP - charXP)
+    print("|cff05dffaDiceTools|r Character Info:")
+    print("  Effective Level: " .. charLevel)
+    print("  XP: " .. charXP .. " / " .. maxXP)
+    print("  XP to Next: " .. (maxXP - charXP))
 end
 
 --=====================================================================================
--- TradePost Logic Re-Integrated from Older DiceTools Version
+-- TradePost
 --=====================================================================================
 
 SLASH_TRADEPOST1 = "/tradepost"
 SlashCmdList["TRADEPOST"] = function()
-    local activities = C_PerksActivities.GetPerksActivities()
-
-    if not activities or #activities == 0 then
-        print("No TradePost activities found.")
+    if not C_PerksActivities then
+        print("|cff05dffaDiceTools|r TradePost API not available on this client.")
         return
     end
 
-    print("TradePost Activities:")
+    local activities = C_PerksActivities.GetPerksActivities()
+    if not activities or #activities == 0 then
+        print("|cff05dffaDiceTools|r No TradePost activities found.")
+        return
+    end
+
+    print("|cff05dffaDiceTools|r TradePost Activities:")
     for _, activity in ipairs(activities) do
         local info = C_PerksActivities.GetActivityInfo(activity)
         if info then
-            print("Activity ID:", info.id)
-            print("Description:", info.description)
-            print("Is Completed:", tostring(info.isComplete))
-        else
-            print("No valid info for activity ID:", activity)
+            local status = info.isComplete and "|cff2dc26bCompleted|r" or "|cffff6b6bIn Progress|r"
+            print("  [" .. status .. "] " .. info.description)
         end
     end
 end
 
 --=====================================================================================
--- BLU Development Aids
+-- Quest Information
 --=====================================================================================
 
--- Quest Information
 SLASH_QUESTINFO1 = "/questinfo"
 SlashCmdList["QUESTINFO"] = function(args)
-    local questNameOrID = args
-
-    local questID = C_QuestLog.GetQuestIDByName(questNameOrID) 
-    if not questID then
-        questID = tonumber(questNameOrID) -- Try converting to a number if it's an ID
+    local questNameOrID = args and args:trim()
+    if not questNameOrID or questNameOrID == "" then
+        print("|cff05dffaDiceTools|r Usage: /questinfo <quest name or ID>")
+        return
     end
 
-    if questID then
-        local questInfo = C_QuestLog.GetQuestInfo(questID)
-        if questInfo then
-            print("Quest Information:")
-            print("- Title:", questInfo.title)
-            print("- Level:", questInfo.level)
-            print("- IsComplete:", tostring(questInfo.isComplete))
-            print("- IsFailed:", tostring(questInfo.isFailed))
-            
-            -- Retrieve and print quest objectives
-            local questObjectives = C_QuestLog.GetQuestObjectives(questID);
-            if questObjectives then
-                print("- Objectives:")
-                for _, objective in ipairs(questObjectives) do
-                    print("  * " .. objective.text .. " (" .. objective.numFulfilled .. "/" .. objective.numRequired .. ")")
-                end
-            end
+    local questID = C_QuestLog.GetQuestIDByName(questNameOrID)
+    if not questID then
+        questID = tonumber(questNameOrID)
+    end
 
-            -- Retrieve and print quest rewards
-            local rewardXP = GetQuestLogRewardXP(questID)
-            local rewardMoney = GetQuestLogRewardMoney(questID)
-            local numRewardChoices = GetNumQuestLogRewardChoices(questID)
-            local numRewardItems = GetNumQuestLogRewards(questID)
+    if not questID then
+        print("|cff05dffaDiceTools|r Quest not found: " .. questNameOrID)
+        return
+    end
 
-            print("- Rewards:")
-            if rewardXP > 0 then 
-                print("  * XP:", rewardXP) 
+    local questInfo = C_QuestLog.GetQuestInfo(questID)
+    if not questInfo then
+        print("|cff05dffaDiceTools|r Quest not found: " .. questID)
+        return
+    end
+
+    print("|cff05dffaDiceTools|r Quest: " .. questInfo.title)
+    print("  Level: " .. tostring(questInfo.level))
+    print("  Complete: " .. tostring(questInfo.isComplete))
+    print("  Failed: " .. tostring(questInfo.isFailed))
+
+    local objectives = C_QuestLog.GetQuestObjectives(questID)
+    if objectives and #objectives > 0 then
+        print("  Objectives:")
+        for _, obj in ipairs(objectives) do
+            if obj and obj.text then
+                print("    - " .. obj.text .. " (" .. obj.numFulfilled .. "/" .. obj.numRequired .. ")")
             end
-            if rewardMoney > 0 then 
-                print("  * Money:", rewardMoney) 
-            end
-            if numRewardChoices > 0 then
-                print("  * Choices:")
-                for i = 1, numRewardChoices do
-                    local name, texture, numItems, quality, isUsable = GetQuestLogRewardChoiceInfo(i)
-                    print("    - " .. name .. " (x" .. numItems .. ")")
-                end
-            end
-            if numRewardItems > 0 then
-                print("  * Items:")
-                for i = 1, numRewardItems do
-                    local name, texture, numItems, quality, isUsable = GetQuestLogRewardInfo(i)
-                    print("    - " .. name .. " (x" .. numItems .. ")")
-                end
-            end
-        else
-            print("Quest not found.")
         end
-    else
-        print("Invalid quest name or ID.")
+    end
+
+    local rewardXP = GetQuestLogRewardXP(questID)
+    local rewardMoney = GetQuestLogRewardMoney(questID)
+    local numChoices = GetNumQuestLogRewardChoices(questID)
+    local numItems = GetNumQuestLogRewards(questID)
+
+    if rewardXP > 0 or rewardMoney > 0 or numChoices > 0 or numItems > 0 then
+        print("  Rewards:")
+        if rewardXP > 0 then print("    XP: " .. rewardXP) end
+        if rewardMoney > 0 then print("    Money: " .. rewardMoney) end
+        if numChoices > 0 then
+            for i = 1, numChoices do
+                local name = GetQuestLogRewardChoiceInfo(i)
+                if name then print("    Choice: " .. name) end
+            end
+        end
+        if numItems > 0 then
+            for i = 1, numItems do
+                local name = GetQuestLogRewardInfo(i)
+                if name then print("    Item: " .. name) end
+            end
+        end
     end
 end
 
--- List available quests in the current zone
 SLASH_QUESTAVAILABLE1 = "/questavailable"
 SlashCmdList["QUESTAVAILABLE"] = function()
     local currentMapID = C_Map.GetBestMapForUnit("player")
-    local quests = C_QuestLog.GetQuestsOnMap(currentMapID)
+    if not currentMapID then
+        print("|cff05dffaDiceTools|r Unable to determine current map.")
+        return
+    end
 
+    local quests = C_QuestLog.GetQuestsOnMap(currentMapID)
     if quests and #quests > 0 then
-        print("Available quests in the current zone:")
+        print("|cff05dffaDiceTools|r Available quests in current zone:")
         for _, quest in ipairs(quests) do
-            print("- " .. quest.title)
+            print("  - " .. quest.title)
         end
     else
-        print("No available quests in the current zone.")
+        print("|cff05dffaDiceTools|r No available quests in the current zone.")
     end
 end
 
@@ -297,39 +291,59 @@ end
 
 SLASH_ZONEINFO1 = "/zoneinfo"
 SlashCmdList["ZONEINFO"] = function(zoneName)
-    local mapID = C_Map.GetMapInfoByName(zoneName)
-    if not mapID then
-        print("Zone not found: " .. zoneName)
+    if not zoneName or zoneName:trim() == "" then
+        print("|cff05dffaDiceTools|r Usage: /zoneinfo <zone name>")
         return
     end
 
-    local mapInfo = C_Map.GetMapInfo(mapID)
-    if mapInfo then
-        print("Zone Information:")
-        print("- Name:", mapInfo.name)
-        print("- Map ID:", mapID)
-        print("- Parent Map ID:", mapInfo.parentMapID)
-    else
-        print("No information found for zone: " .. zoneName)
+    local mapInfo = C_Map.GetMapInfoAtPosition(C_Map.GetBestMapForUnit("player"))
+    -- Search by iterating map children of Azeroth (947)
+    local continents = C_Map.GetMapChildrenInfo(947)
+    if not continents then
+        print("|cff05dffaDiceTools|r Unable to retrieve map data.")
+        return
     end
+
+    for _, continent in ipairs(continents) do
+        local zones = C_Map.GetMapChildrenInfo(continent.mapID, Enum.UIMapType.Zone, true)
+        if zones then
+            for _, zone in ipairs(zones) do
+                if zone.name and zone.name:lower():find(zoneName:lower(), 1, true) then
+                    print("|cff05dffaDiceTools|r Zone: " .. zone.name)
+                    print("  Map ID: " .. zone.mapID)
+                    print("  Parent: " .. tostring(zone.parentMapID))
+                    print("  Map Type: " .. tostring(zone.mapType))
+                    return
+                end
+            end
+        end
+    end
+
+    print("|cff05dffaDiceTools|r Zone not found: " .. zoneName)
 end
 
 SLASH_ZONELIST1 = "/zonelist"
 SlashCmdList["ZONELIST"] = function()
-    local continents = C_Map.GetMapChildrenInfo(947, Enum.UIMapType.Continent, true) -- 947 is Azeroth's Map ID
+    local continents = C_Map.GetMapChildrenInfo(947, Enum.UIMapType.Continent, true)
+    if not continents or #continents == 0 then
+        print("|cff05dffaDiceTools|r Unable to retrieve continent data.")
+        return
+    end
 
-    print("List of Continents and Zones:")
+    print("|cff05dffaDiceTools|r Continents and Zones:")
     for _, continent in ipairs(continents) do
-        print("- Continent: " .. continent.name)
+        print("  " .. continent.name)
         local zones = C_Map.GetMapChildrenInfo(continent.mapID, Enum.UIMapType.Zone, true)
-        for _, zone in ipairs(zones) do
-            print("  - Zone: " .. zone.name)
+        if zones then
+            for _, zone in ipairs(zones) do
+                print("    - " .. zone.name)
+            end
         end
     end
 end
 
 --=====================================================================================
--- Experience and Leveling Details
+-- XP Details
 --=====================================================================================
 
 SLASH_XPDETAILS1 = "/xpdetails"
@@ -339,42 +353,48 @@ SlashCmdList["XPDETAILS"] = function()
     local maxXP = UnitXPMax("player")
     local restedXP = GetXPExhaustion() or 0
 
-    print("XP Details:")
-    print("- Level:", playerLevel)
-    print("- Current XP:", playerXP .. "/" .. maxXP)
-    print("- XP to Next Level:", maxXP - playerXP)
-    print("- Rested XP:", restedXP)
+    local pct = maxXP > 0 and string.format("%.1f", (playerXP / maxXP) * 100) or "0"
+
+    print("|cff05dffaDiceTools|r XP Details:")
+    print("  Level: " .. playerLevel)
+    print("  XP: " .. playerXP .. " / " .. maxXP .. " (" .. pct .. "%)")
+    print("  XP to Next: " .. (maxXP - playerXP))
+    print("  Rested XP: " .. restedXP)
 end
 
 SLASH_XPSOURCES1 = "/xpsources"
 SlashCmdList["XPSOURCES"] = function()
-    -- Placeholder: Implement logic to list XP sources in current zone (quests, mobs, etc.)
-    print("XP sources not yet implemented.")
+    print("|cff05dffaDiceTools|r XP sources feature not yet implemented.")
 end
 
 --=====================================================================================
--- General API Exploration Command
+-- API Explorer
 --=====================================================================================
 
 SLASH_API1 = "/api"
 SlashCmdList["API"] = function(apiFunction)
-    local func = _G[apiFunction]
+    if not apiFunction or apiFunction:trim() == "" then
+        print("|cff05dffaDiceTools|r Usage: /api <function name>")
+        return
+    end
 
-    if func then
-        local success, result = pcall(func)
-        if success then
-            print("API Call Result:")
-            if type(result) == "table" then
-                for k, v in pairs(result) do
-                    print(k, v)
-                end
-            else
-                print(tostring(result))
+    local func = _G[apiFunction]
+    if not func then
+        print("|cff05dffaDiceTools|r Function not found: " .. apiFunction)
+        return
+    end
+
+    local success, result = pcall(func)
+    if success then
+        print("|cff05dffaDiceTools|r Result of " .. apiFunction .. ":")
+        if type(result) == "table" then
+            for k, v in pairs(result) do
+                print("  " .. tostring(k) .. " = " .. tostring(v))
             end
         else
-            print("Error calling API function: " .. result)
+            print("  " .. tostring(result))
         end
     else
-        print("API function not found: " .. apiFunction)
+        print("|cff05dffaDiceTools|r Error calling " .. apiFunction .. ": " .. tostring(result))
     end
 end

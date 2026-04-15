@@ -1,2 +1,5 @@
 package-as: DiceTools
-manual-changelog: CHANGES.md
+manual-changelog: docs/CHANGES.md
+ignore:
+  - changelog.txt
+  - .github

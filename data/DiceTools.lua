@@ -5,24 +5,16 @@
 local DiceTools = {}
 _G.DiceTools = DiceTools
 
--- Create a frame for events
+local GetMetadata = (C_AddOns and C_AddOns.GetAddOnMetadata) or GetAddOnMetadata
+local ADDON_VERSION = (GetMetadata and GetMetadata("DiceTools", "Version")) or "unknown"
+
 local frame = CreateFrame("Frame", "DiceToolsFrame")
-
--- Event registration
-frame:RegisterEvent("PLAYER_ENTERING_WORLD")
 frame:RegisterEvent("ADDON_LOADED")
-
--- Event handler
-local function OnEvent(self, event, ...)
-    if event == "ADDON_LOADED" then
-        local addonName = ...
-        if addonName == "DiceTools" then
-            print("|cff05dffaDiceTools|r v2.0.0 loaded. Type |cff05dffa/dt|r for commands.")
-        end
+frame:SetScript("OnEvent", function(self, event, addonName)
+    if event == "ADDON_LOADED" and addonName == "DiceTools" then
+        print("|cff05dffaDiceTools|r v" .. ADDON_VERSION .. " loaded. Type |cff05dffa/dt|r for commands.")
     end
-end
-
-frame:SetScript("OnEvent", OnEvent)
+end)
 
 --=====================================================================================
 -- Slash Command Handling
@@ -109,39 +101,49 @@ end
 
 SLASH_RENOWN1 = "/renown"
 SlashCmdList["RENOWN"] = function()
-    if not C_Reputation then
-        print("|cff05dffaDiceTools|r C_Reputation API not available on this client.")
+    if not C_MajorFactions or not C_MajorFactions.GetMajorFactionIDs then
+        print("|cff05dffaDiceTools|r Major Faction (Renown) API not available on this client.")
         return
     end
 
-    local renownFactions = C_Reputation.GetRenownFactions()
-    if not renownFactions or #renownFactions == 0 then
+    local ids = C_MajorFactions.GetMajorFactionIDs()
+    if not ids or #ids == 0 then
         print("|cff05dffaDiceTools|r No Renown factions found.")
         return
     end
 
     print("|cff05dffaDiceTools|r Renown Factions:")
-    for _, factionID in ipairs(renownFactions) do
-        local factionName = GetFactionInfoByID(factionID) or "Unknown"
-        local currentLevel = C_Reputation.GetRenownLevel(factionID) or 0
-        local maxLevel = C_Reputation.GetRenownMaxLevel(factionID) or 0
-        print("  " .. tostring(factionName) .. " - Level: " .. currentLevel .. "/" .. maxLevel)
+    for _, factionID in ipairs(ids) do
+        local data = C_MajorFactions.GetMajorFactionData(factionID)
+        if data then
+            print("  " .. tostring(data.name) .. " - Renown: " .. tostring(data.renownLevel)
+                .. " (" .. tostring(data.renownReputationEarned) .. "/" .. tostring(data.renownLevelThreshold) .. ")")
+        end
     end
 end
 
 SLASH_FRIENDSHIP1 = "/friendship"
-SlashCmdList["FRIENDSHIP"] = function()
-    local friendReps = C_GossipInfo.GetFriendshipReputation()
-    if not friendReps or #friendReps == 0 then
-        print("|cff05dffaDiceTools|r No friendship reputations found.")
+SlashCmdList["FRIENDSHIP"] = function(args)
+    local factionID = tonumber(args and args:trim())
+    if not factionID then
+        print("|cff05dffaDiceTools|r Usage: /friendship <factionID>")
         return
     end
 
-    print("|cff05dffaDiceTools|r Friendship Reputations:")
-    for _, repInfo in ipairs(friendReps) do
-        local factionName = GetFactionInfoByID(repInfo.factionID) or "Unknown"
-        print("  " .. factionName .. " - Standing: " .. repInfo.standing .. " / " .. repInfo.reactionThreshold)
+    if not C_GossipInfo or not C_GossipInfo.GetFriendshipReputation then
+        print("|cff05dffaDiceTools|r Friendship API not available.")
+        return
     end
+
+    local info = C_GossipInfo.GetFriendshipReputation(factionID)
+    if not info or not info.friendshipFactionID or info.friendshipFactionID == 0 then
+        print("|cff05dffaDiceTools|r No friendship reputation for factionID " .. factionID)
+        return
+    end
+
+    print("|cff05dffaDiceTools|r Friendship: " .. tostring(info.name))
+    print("  Standing: " .. tostring(info.reaction) .. " - " .. tostring(info.text or ""))
+    print("  Rep: " .. tostring(info.standing) .. " / " .. tostring(info.maxRep))
 end
 
 --=====================================================================================
@@ -211,26 +213,22 @@ SlashCmdList["QUESTINFO"] = function(args)
         return
     end
 
-    local questID = C_QuestLog.GetQuestIDByName(questNameOrID)
+    local questID = tonumber(questNameOrID)
     if not questID then
-        questID = tonumber(questNameOrID)
-    end
-
-    if not questID then
-        print("|cff05dffaDiceTools|r Quest not found: " .. questNameOrID)
+        print("|cff05dffaDiceTools|r Usage: /questinfo <questID> (name lookup not supported by client API)")
         return
     end
 
-    local questInfo = C_QuestLog.GetQuestInfo(questID)
-    if not questInfo then
+    local title = C_QuestLog.GetTitleForQuestID(questID)
+    if not title then
         print("|cff05dffaDiceTools|r Quest not found: " .. questID)
         return
     end
 
-    print("|cff05dffaDiceTools|r Quest: " .. questInfo.title)
-    print("  Level: " .. tostring(questInfo.level))
-    print("  Complete: " .. tostring(questInfo.isComplete))
-    print("  Failed: " .. tostring(questInfo.isFailed))
+    print("|cff05dffaDiceTools|r Quest: " .. title .. " (" .. questID .. ")")
+    print("  Complete: " .. tostring(C_QuestLog.IsComplete(questID)))
+    print("  On Quest: " .. tostring(C_QuestLog.IsOnQuest(questID)))
+    print("  Flagged Completed: " .. tostring(C_QuestLog.IsQuestFlaggedCompleted(questID)))
 
     local objectives = C_QuestLog.GetQuestObjectives(questID)
     if objectives and #objectives > 0 then
@@ -296,9 +294,7 @@ SlashCmdList["ZONEINFO"] = function(zoneName)
         return
     end
 
-    local mapInfo = C_Map.GetMapInfoAtPosition(C_Map.GetBestMapForUnit("player"))
-    -- Search by iterating map children of Azeroth (947)
-    local continents = C_Map.GetMapChildrenInfo(947)
+    local continents = C_Map.GetMapChildrenInfo(947, Enum.UIMapType.Continent, true)
     if not continents then
         print("|cff05dffaDiceTools|r Unable to retrieve map data.")
         return
@@ -371,30 +367,68 @@ end
 -- API Explorer
 --=====================================================================================
 
+local function ResolvePath(path)
+    local target = _G
+    for segment in path:gmatch("[^.]+") do
+        if type(target) ~= "table" then return nil end
+        target = target[segment]
+        if target == nil then return nil end
+    end
+    return target
+end
+
+local function ParseArg(raw)
+    if raw == "nil" then return nil end
+    if raw == "true" then return true end
+    if raw == "false" then return false end
+    local n = tonumber(raw)
+    if n then return n end
+    local stripped = raw:match('^"(.*)"$') or raw:match("^'(.*)'$")
+    return stripped or raw
+end
+
 SLASH_API1 = "/api"
-SlashCmdList["API"] = function(apiFunction)
-    if not apiFunction or apiFunction:trim() == "" then
-        print("|cff05dffaDiceTools|r Usage: /api <function name>")
+SlashCmdList["API"] = function(input)
+    input = input and input:trim() or ""
+    if input == "" then
+        print("|cff05dffaDiceTools|r Usage: /api <function[.path]> [arg1 arg2 ...]")
         return
     end
 
-    local func = _G[apiFunction]
-    if not func then
-        print("|cff05dffaDiceTools|r Function not found: " .. apiFunction)
+    local name, rest = input:match("^(%S+)%s*(.*)$")
+    local func = ResolvePath(name)
+    if type(func) ~= "function" then
+        print("|cff05dffaDiceTools|r Function not found: " .. name)
         return
     end
 
-    local success, result = pcall(func)
-    if success then
-        print("|cff05dffaDiceTools|r Result of " .. apiFunction .. ":")
+    local args = {}
+    if rest and rest ~= "" then
+        for token in rest:gmatch("%S+") do
+            args[#args + 1] = ParseArg(token)
+        end
+    end
+
+    local results = { pcall(func, unpack(args)) }
+    local success = table.remove(results, 1)
+    if not success then
+        print("|cff05dffaDiceTools|r Error calling " .. name .. ": " .. tostring(results[1]))
+        return
+    end
+
+    print("|cff05dffaDiceTools|r Result of " .. name .. ":")
+    if #results == 0 then
+        print("  (no return value)")
+        return
+    end
+    for i, result in ipairs(results) do
         if type(result) == "table" then
+            print("  [" .. i .. "] table:")
             for k, v in pairs(result) do
-                print("  " .. tostring(k) .. " = " .. tostring(v))
+                print("    " .. tostring(k) .. " = " .. tostring(v))
             end
         else
-            print("  " .. tostring(result))
+            print("  [" .. i .. "] " .. tostring(result))
         end
-    else
-        print("|cff05dffaDiceTools|r Error calling " .. apiFunction .. ": " .. tostring(result))
     end
 end

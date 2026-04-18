@@ -1,5 +1,15 @@
 # Changes
 
+## v2.1.0
+
+- Version string is now read from TOC metadata instead of hardcoded (no more drift)
+- Fixed `/renown` to use Midnight's `C_MajorFactions` API
+- Fixed `/friendship` to use the correct single-faction `C_GossipInfo.GetFriendshipReputation(factionID)` signature
+- Fixed `/questinfo` — removed calls to non-existent `C_QuestLog.GetQuestIDByName` / `GetQuestInfo`; now uses `GetTitleForQuestID` + quest state helpers
+- Fixed `/zoneinfo` — removed unused `GetMapInfoAtPosition` call and added proper continent filter
+- Enhanced `/api` — now parses arguments (numbers, booleans, strings, dotted paths) and shows all return values
+- `IconTexture` path updated for `images/` → `media/` migration
+
 ## v2.0.0
 
 - Complete overhaul of release workflow with proper version extraction, changelog parsing, and Discord notifications

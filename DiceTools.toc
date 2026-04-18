@@ -1,5 +1,5 @@
 ## Interface: 11508,40402,50503,110207,120000,120001
-## Version: 2.0.0
+## Version: 2.1.0
 ## Title: DiceTools
 ## Notes: Developer utilities and debugging toolkit |n|r |cff05dffa/dt|r to get started
 ## Author: DonnieDice
@@ -11,6 +11,6 @@
 ## X-Curse-Project-ID: 937450
 ## X-WoWI-ID: 26259
 ## X-Wago-ID: n6VPaMNb
-## IconTexture: Interface\AddOns\DiceTools\images\icon.png
+## IconTexture: Interface\AddOns\DiceTools\media\icon.png
 
 data\DiceTools.lua

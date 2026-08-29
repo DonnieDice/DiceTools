@@ -44,7 +44,7 @@ A developer and debugging toolkit for World of Warcraft.
 
 ## Installation
 
-1. Download from [CurseForge](https://www.curseforge.com/wow/addons/dicetools), [GitHub Releases](https://github.com/donniedice/DiceTools/releases), or [WoWInterface](https://www.wowinterface.com/downloads/info26259)
+1. Download from [CurseForge](https://www.curseforge.com/wow/addons/dicetools) or [GitHub Releases](https://github.com/donniedice/DiceTools/releases)
 2. Extract to your `Interface/AddOns` directory
 3. Restart WoW and enable the addon
 

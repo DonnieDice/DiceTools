@@ -9,7 +9,6 @@
 ## X-Category: Development Tools, Miscellaneous
 ## X-Website: https://github.com/donniedice/DiceTools
 ## X-Curse-Project-ID: 937450
-## X-WoWI-ID: 26259
 ## X-Wago-ID: n6VPaMNb
 ## IconTexture: Interface\AddOns\DiceTools\media\icon.png
 
